@@ -5,6 +5,7 @@
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
+      currentState(NotConnected),
       sshProcess(NULL),
       sshAskPassFile(NULL)
 {
@@ -45,10 +46,10 @@ MainWindow::MainWindow(QWidget *parent)
     socksServerLayout->addWidget(socksServerPortEdit);
     layout->addRow(tr("SOCKS Server:"), socksServerLayout);
 
-    statusLabel = new QLabel(tr("Not connected"));
+    statusLabel = new QLabel();
     layout->addRow(tr("Status:"), statusLabel);
 
-    connectBtn = new QPushButton(tr("Connect"));
+    connectBtn = new QPushButton();
     connect(connectBtn, SIGNAL(clicked()), this, SLOT(connectBtnClicked()));
     layout->addRow(connectBtn);
 
@@ -60,6 +61,8 @@ MainWindow::MainWindow(QWidget *parent)
     prepareTrayIcon();
 
     loadSettings();
+
+    setCurrentState(NotConnected);
 }
 
 MainWindow::~MainWindow()
@@ -71,59 +74,10 @@ void
 MainWindow::connectBtnClicked()
 {
     connectBtn->setDisabled(true);
-    if (sshProcess == NULL) {
-        statusLabel->setText(tr("Connecting..."));
-
-        /* Create SSH process object */
-        sshProcess = new QProcess(this);
-        connect(sshProcess, SIGNAL(readyReadStandardOutput()),
-                this, SLOT(sshReadyReadStdout()));
-        connect(sshProcess, SIGNAL(readyReadStandardError()),
-                this, SLOT(sshReadyReadStderr()));
-
-        /* Generate SSH_ASKPASS file with right permission and content */
-        sshAskPassFile = new QTemporaryFile();
-        if (!sshAskPassFile->open()) {
-            statusLabel->setText(tr("Connect failed (SSH_ASKPASS error)"));
-            connectBtn->setEnabled(true);
-            return;
-        }
-        QFile::Permissions perm = sshAskPassFile->permissions();
-        qDebug() << sshAskPassFile->fileName();
-        perm |= QFile::ExeOwner | QFile::ExeUser;
-        sshAskPassFile->setPermissions(perm);
-        QTextStream out(sshAskPassFile);
-        out << "#!/usr/bin/env bash\n";
-        out << "echo '" << passwordEdit->text() << "'\n";
-
-        /* Set SSH_ASKPASS enviroment variable */
-        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
-        env.insert("SSH_ASKPASS", sshAskPassFile->fileName());
-        sshProcess->setProcessEnvironment(env);
-
-        /* Assemble arguments and start SSH process */
-        QStringList arguments;
-        arguments << "-qTnN";
-        arguments << "-v";
-        arguments << "-D" << QString("%1:%2").arg(socksServerAddrEdit->text(),
-                                                  socksServerPortEdit->text());
-        arguments << "-p" << sshServerPortEdit->text();
-        arguments << QString("%1@%2").arg(usernameEdit->text(),
-                                          sshServerAddrEdit->text());
-        sshProcess->start("ssh", arguments);
-        if (!sshProcess->waitForStarted(1000)) {
-            statusLabel->setText(tr("SSH start failed"));
-            connectBtn->setEnabled(true);
-            return;
-        }
+    if (currentState == NotConnected) {
+        connectSSH();
     } else {
-        statusLabel->setText(tr("Disconnecting..."));
-        sshProcess->kill();
-        delete sshProcess;
-        sshProcess = NULL;
-        statusLabel->setText(tr("Not connected"));
-        connectBtn->setText(tr("Connect"));
-        connectBtn->setEnabled(true);
+        disconnectSSH();
     }
 }
 
@@ -142,19 +96,15 @@ MainWindow::sshReadyReadStderr()
 
     if (data.contains("Permission denied")) {
         /* Connect failed */
+        setCurrentState(NotConnected);
         statusLabel->setText(tr("Connect failed (permission denied)"));
-        connectBtn->setEnabled(true);
-
         if (sshAskPassFile != NULL) {
             delete sshAskPassFile;
             sshAskPassFile = NULL;
         }
     } else if (data.contains("Entering interactive session.")) {
         /* Connect success */
-        statusLabel->setText(tr("Connected"));
-        connectBtn->setText(tr("Disconnect"));
-        connectBtn->setEnabled(true);
-
+        setCurrentState(Connected);
         if (sshAskPassFile != NULL) {
             delete sshAskPassFile;
             sshAskPassFile = NULL;
@@ -169,6 +119,24 @@ MainWindow::sshReadyReadStderr()
 //    QString text = qApp->applicationName() + " is a open source software";
 //    QMessageBox::about(this, title, text);
 //}
+
+void
+MainWindow::systemTrayActivated(QSystemTrayIcon::ActivationReason reason)
+{
+    if (currentState == Connected) {
+
+    }
+}
+
+void
+MainWindow::operationActionTriggered()
+{
+    if (currentState == NotConnected) {
+        connectSSH();
+    } else if (currentState == Connected) {
+        disconnectSSH();
+    }
+}
 
 void
 MainWindow::closeEvent(QCloseEvent *event)
@@ -203,8 +171,23 @@ MainWindow::prepareTrayIcon()
     trayIcon = new QSystemTrayIcon(QIcon(":/images/images/icon_16x16@2x.png"),
                                    this);
     trayMenu = new QMenu(this);
+
+    /* Add status and operation action */
+    statusAction = new QAction(this);
+    statusAction->setDisabled(true);
+    trayMenu->addAction(statusAction);
+    operationAction = new QAction(this);
+    connect(operationAction, SIGNAL(triggered()),
+            this, SLOT(operationActionTriggered()));
+    trayMenu->addAction(operationAction);
+
+    /* Separator */
+    trayMenu->addSeparator();
+
+    /* Quit action */
     trayMenu->addAction(tr("Quit %1").arg(qApp->applicationName()),
                         qApp, SLOT(quit()));
+
     trayIcon->setContextMenu(trayMenu);
     trayIcon->show();
 }
@@ -222,4 +205,97 @@ MainWindow::loadSettings()
     socksServerAddrEdit->setText(settings.value("socks_server/addr").toString());
     socksServerPortEdit->setText(settings.value("socks_server/port",
                                                 "7070").toString());
+}
+
+void
+MainWindow::connectSSH()
+{
+    setCurrentState(Connecting);
+
+    /* Create SSH process object */
+    sshProcess = new QProcess(this);
+    connect(sshProcess, SIGNAL(readyReadStandardOutput()),
+            this, SLOT(sshReadyReadStdout()));
+    connect(sshProcess, SIGNAL(readyReadStandardError()),
+            this, SLOT(sshReadyReadStderr()));
+
+    /* Generate SSH_ASKPASS file with right permission and content */
+    sshAskPassFile = new QTemporaryFile();
+    if (!sshAskPassFile->open()) {
+        setCurrentState(NotConnected);
+        statusLabel->setText(tr("Connect failed (SSH_ASKPASS error)"));
+        return;
+    }
+    QFile::Permissions perm = sshAskPassFile->permissions();
+    qDebug() << sshAskPassFile->fileName();
+    perm |= QFile::ExeOwner | QFile::ExeUser;
+    sshAskPassFile->setPermissions(perm);
+    QTextStream out(sshAskPassFile);
+    out << "#!/usr/bin/env bash\n";
+    out << "echo '" << passwordEdit->text() << "'\n";
+
+    /* Set SSH_ASKPASS enviroment variable */
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    env.insert("SSH_ASKPASS", sshAskPassFile->fileName());
+    sshProcess->setProcessEnvironment(env);
+
+    /* Assemble arguments and start SSH process */
+    QStringList arguments;
+    arguments << "-qTnN";
+    arguments << "-v";
+    arguments << "-D" << QString("%1:%2").arg(socksServerAddrEdit->text(),
+                                              socksServerPortEdit->text());
+    arguments << "-p" << sshServerPortEdit->text();
+    arguments << QString("%1@%2").arg(usernameEdit->text(),
+                                      sshServerAddrEdit->text());
+    sshProcess->start("ssh", arguments);
+    if (!sshProcess->waitForStarted(1000)) {
+        setCurrentState(NotConnected);
+        statusLabel->setText(tr("SSH start failed"));
+        return;
+    }
+}
+
+void
+MainWindow::disconnectSSH()
+{
+    setCurrentState(Disconnecting);
+
+    sshProcess->kill();
+    delete sshProcess;
+    sshProcess = NULL;
+
+    setCurrentState(NotConnected);
+}
+
+void
+MainWindow::setCurrentState(CurrentState state)
+{
+    currentState = state;
+
+    if (currentState == NotConnected) {
+        statusLabel->setText(tr("Not connected"));
+        connectBtn->setText(tr("Connect"));
+        connectBtn->setEnabled(true);
+        statusAction->setText(tr("Not connected"));
+        operationAction->setText(tr("Connect"));
+        operationAction->setVisible(true);
+    } else if (currentState == Connecting) {
+        statusLabel->setText(tr("Connecting..."));
+        connectBtn->setEnabled(false);
+        statusAction->setText(tr("Connecting..."));
+        operationAction->setVisible(false);
+    } else if (currentState == Connected) {
+        statusLabel->setText(tr("Connected"));
+        connectBtn->setText(tr("Disconnect"));
+        connectBtn->setEnabled(true);
+        statusAction->setText(tr("Connected"));
+        operationAction->setText(tr("Disconnect"));
+        operationAction->setVisible(true);
+    } else if (currentState == Disconnecting) {
+        statusLabel->setText(tr("Disconnecting..."));
+        connectBtn->setEnabled(false);
+        statusAction->setText(tr("Disconnecting..."));
+        operationAction->setVisible(false);
+    }
 }

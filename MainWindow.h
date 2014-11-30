@@ -37,6 +37,9 @@ public slots:
 
 //    void aboutClicked();
 
+    void systemTrayActivated(QSystemTrayIcon::ActivationReason reason);
+    void operationActionTriggered();
+
 protected:
     virtual void closeEvent(QCloseEvent *event);
 
@@ -45,13 +48,26 @@ private:
     void prepareTrayIcon();
     void loadSettings();
 
+    void connectSSH();
+    void disconnectSSH();
+
+    enum CurrentState { NotConnected, Connecting, Connected, Disconnecting };
+    CurrentState currentState;
+    void setCurrentState(CurrentState state);
+
+    QProcess *sshProcess;
+    QTemporaryFile *sshAskPassFile;
+    QSettings settings;
+
     /* Menus and Actions */
 //    QMenu *helpMenu;
 //    QAction *aboutAction;
 
-    /* Tray icon and menu */
+    /* Tray icon, menu and actions */
     QSystemTrayIcon *trayIcon;
     QMenu *trayMenu;
+    QAction *statusAction;
+    QAction *operationAction;
 
     /* Base layout */
 	QFormLayout *layout;
@@ -72,11 +88,7 @@ private:
     /* Status field */
 	QLabel *statusLabel;
     /* Connect button */
-	QPushButton *connectBtn;
-
-    QProcess *sshProcess;
-    QTemporaryFile *sshAskPassFile;
-    QSettings settings;
+    QPushButton *connectBtn;
 };
 
 #endif // MAINWINDOW_H
