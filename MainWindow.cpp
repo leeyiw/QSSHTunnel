@@ -2,7 +2,6 @@
 #include <QDebug>
 
 #include "MainWindow.h"
-#include "QSSHTunnel.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
@@ -56,6 +55,9 @@ MainWindow::MainWindow(QWidget *parent)
     QWidget *widget = new QWidget(this);
     widget->setLayout(layout);
     setCentralWidget(widget);
+
+    prepareMenuBar();
+    prepareTrayIcon();
 
     loadSettings();
 }
@@ -160,6 +162,14 @@ MainWindow::sshReadyReadStderr()
     }
 }
 
+//void
+//MainWindow::aboutClicked()
+//{
+//    QString title = tr("About") + " " + qApp->applicationName();
+//    QString text = qApp->applicationName() + " is a open source software";
+//    QMessageBox::about(this, title, text);
+//}
+
 void
 MainWindow::closeEvent(QCloseEvent *event)
 {
@@ -176,6 +186,27 @@ MainWindow::closeEvent(QCloseEvent *event)
     settings.setValue("socks_server/addr", socksServerAddrEdit->text());
     settings.setValue("socks_server/port", socksServerPortEdit->text());
     event->accept();
+}
+
+void
+MainWindow::prepareMenuBar()
+{
+    /* Set menu bar */
+//    helpMenu = new QMenu(tr("Help"));
+//    helpMenu->addAction(tr("About"), this, SLOT(aboutClicked()));
+//    this->menuBar()->addMenu(hnielpMenu);
+}
+
+void
+MainWindow::prepareTrayIcon()
+{
+    trayIcon = new QSystemTrayIcon(QIcon(":/images/images/icon_16x16@2x.png"),
+                                   this);
+    trayMenu = new QMenu(this);
+    trayMenu->addAction(tr("Quit %1").arg(qApp->applicationName()),
+                        qApp, SLOT(quit()));
+    trayIcon->setContextMenu(trayMenu);
+    trayIcon->show();
 }
 
 void

@@ -1,19 +1,26 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QAction>
 #include <QApplication>
 #include <QCheckBox>
 #include <QCloseEvent>
-#include <QMainWindow>
 #include <QFormLayout>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QLabel>
 #include <QLineEdit>
-#include <QPushButton>
-#include <QWidget>
+#include <QMainWindow>
+#include <QMenu>
+#include <QMenuBar>
+#include <QMessageBox>
+#include <QPixmap>
 #include <QProcess>
-#include <QTemporaryFile>
+#include <QPushButton>
 #include <QSettings>
+#include <QSystemTrayIcon>
+#include <QTemporaryFile>
+#include <QWidget>
 
 class MainWindow : public QMainWindow
 {
@@ -28,11 +35,23 @@ public slots:
 	void sshReadyReadStdout();
     void sshReadyReadStderr();
 
+//    void aboutClicked();
+
 protected:
     virtual void closeEvent(QCloseEvent *event);
 
 private:
+    void prepareMenuBar();
+    void prepareTrayIcon();
     void loadSettings();
+
+    /* Menus and Actions */
+//    QMenu *helpMenu;
+//    QAction *aboutAction;
+
+    /* Tray icon and menu */
+    QSystemTrayIcon *trayIcon;
+    QMenu *trayMenu;
 
     /* Base layout */
 	QFormLayout *layout;

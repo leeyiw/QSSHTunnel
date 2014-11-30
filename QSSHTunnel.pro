@@ -16,3 +16,8 @@ SOURCES += main.cpp\
         MainWindow.cpp
 
 HEADERS  += MainWindow.h
+
+RESOURCES += \
+    resource.qrc
+
+ICON = images/QSSHTunnel.icns
