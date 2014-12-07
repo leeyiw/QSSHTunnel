@@ -21,3 +21,5 @@ RESOURCES += \
     resource.qrc
 
 ICON = images/QSSHTunnel.icns
+
+TRANSLATIONS = translates/$${TARGET}_zh_CN.ts

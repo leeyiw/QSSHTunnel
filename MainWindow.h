@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QCloseEvent>
+#include <QDebug>
 #include <QElapsedTimer>
 #include <QFormLayout>
 #include <QHBoxLayout>
@@ -19,6 +20,7 @@
 #include <QProcess>
 #include <QPushButton>
 #include <QSettings>
+#include <QStringList>
 #include <QSystemTrayIcon>
 #include <QTemporaryFile>
 #include <QTime>

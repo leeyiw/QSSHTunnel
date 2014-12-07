@@ -1,6 +1,3 @@
-#include <QStringList>
-#include <QDebug>
-
 #include "MainWindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
