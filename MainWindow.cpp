@@ -7,7 +7,8 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
       currentState(NotConnected),
       sshProcess(NULL),
-      sshAskPassFile(NULL)
+      sshAskPassFile(NULL),
+      timer(NULL)
 {
     setWindowTitle(qApp->applicationName());
 
@@ -95,20 +96,28 @@ MainWindow::sshReadyReadStderr()
     qDebug() << "stderr:" << data;
 
     if (data.contains("Permission denied")) {
-        /* Connect failed */
+        /* Connect failed, maybe incorrect username or password */
         setCurrentState(NotConnected);
         statusLabel->setText(tr("Connect failed (permission denied)"));
         if (sshAskPassFile != NULL) {
             delete sshAskPassFile;
             sshAskPassFile = NULL;
         }
+    } else if (data.contains("Operation timed out")) {
+        /* Connect failed, maybe incorrect IP/port */
+        setCurrentState(NotConnected);
+        statusLabel->setText(tr("Connect failed (Operation timed out)"));
     } else if (data.contains("Entering interactive session.")) {
         /* Connect success */
         setCurrentState(Connected);
-        if (sshAskPassFile != NULL) {
-            delete sshAskPassFile;
-            sshAskPassFile = NULL;
-        }
+    } else {
+        /* If output is not key information, then return, don't remove
+         * sshAskPassFile */
+        return;
+    }
+    if (sshAskPassFile != NULL) {
+        delete sshAskPassFile;
+        sshAskPassFile = NULL;
     }
 }
 
@@ -136,6 +145,16 @@ MainWindow::operationActionTriggered()
     } else if (currentState == Connected) {
         disconnectSSH();
     }
+}
+
+void
+MainWindow::updateTime()
+{
+    QTime connectedTime(0, 0, 0);
+    connectedTime = connectedTime.addMSecs(elapsedTimer.elapsed());
+    QString status = tr("Connect (%1)").arg(connectedTime.toString("hh:mm:ss"));
+    statusLabel->setText(status);
+    statusAction->setText(status);
 }
 
 void
@@ -233,6 +252,7 @@ MainWindow::connectSSH()
     QTextStream out(sshAskPassFile);
     out << "#!/usr/bin/env bash\n";
     out << "echo '" << passwordEdit->text() << "'\n";
+    sshAskPassFile->close();
 
     /* Set SSH_ASKPASS enviroment variable */
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
@@ -246,6 +266,7 @@ MainWindow::connectSSH()
     arguments << "-D" << QString("%1:%2").arg(socksServerAddrEdit->text(),
                                               socksServerPortEdit->text());
     arguments << "-p" << sshServerPortEdit->text();
+    arguments << "-o" << "ConnectTimeout=10";
     arguments << QString("%1@%2").arg(usernameEdit->text(),
                                       sshServerAddrEdit->text());
     sshProcess->start("ssh", arguments);
@@ -272,6 +293,18 @@ void
 MainWindow::setCurrentState(CurrentState state)
 {
     currentState = state;
+
+    if (currentState == Connected) {
+        elapsedTimer.restart();
+        timer = new QTimer(this);
+        connect(timer, SIGNAL(timeout()), this, SLOT(updateTime()));
+        timer->start(1000);
+    } else {
+        if (timer != NULL) {
+            delete timer;
+            timer = NULL;
+        }
+    }
 
     if (currentState == NotConnected) {
         statusLabel->setText(tr("Not connected"));

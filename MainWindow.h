@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QCloseEvent>
+#include <QElapsedTimer>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QIcon>
@@ -20,6 +21,8 @@
 #include <QSettings>
 #include <QSystemTrayIcon>
 #include <QTemporaryFile>
+#include <QTime>
+#include <QTimer>
 #include <QWidget>
 
 class MainWindow : public QMainWindow
@@ -39,6 +42,7 @@ public slots:
 
     void systemTrayActivated(QSystemTrayIcon::ActivationReason reason);
     void operationActionTriggered();
+    void updateTime();
 
 protected:
     virtual void closeEvent(QCloseEvent *event);
@@ -58,6 +62,8 @@ private:
     QProcess *sshProcess;
     QTemporaryFile *sshAskPassFile;
     QSettings settings;
+    QElapsedTimer elapsedTimer;
+    QTimer *timer;
 
     /* Menus and Actions */
 //    QMenu *helpMenu;
