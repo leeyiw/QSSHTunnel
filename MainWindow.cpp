@@ -74,6 +74,38 @@ MainWindow::~MainWindow()
 void
 MainWindow::connectBtnClicked()
 {
+    /* Validate */
+    if (sshServerAddrEdit->text().length() == 0) {
+        QMessageBox::warning(this, tr("Warning"),
+                             tr("Invalid SSH server address"));
+        return;
+    }
+    if (sshServerPortEdit->text().length() == 0) {
+        QMessageBox::warning(this, tr("Warning"),
+                             tr("Invalid SSH server address"));
+        return;
+    }
+    if (usernameEdit->text().length() == 0) {
+        QMessageBox::warning(this, tr("Warning"),
+                             tr("Invalid SSH username"));
+        return;
+    }
+    if (passwordEdit->text().length() == 0) {
+        QMessageBox::warning(this, tr("Warning"),
+                             tr("Invalid SSH password"));
+        return;
+    }
+    if (socksServerAddrEdit->text().length() == 0) {
+        QMessageBox::warning(this, tr("Warning"),
+                             tr("Invalid SOCKS server address"));
+        return;
+    }
+    if (socksServerPortEdit->text().length() == 0) {
+        QMessageBox::warning(this, tr("Warning"),
+                             tr("Invalid SOCKS server address"));
+        return;
+    }
+
     connectBtn->setDisabled(true);
     if (currentState == NotConnected) {
         connectSSH();
@@ -221,7 +253,8 @@ MainWindow::loadSettings()
     passwordEdit->setText(settings.value("password/value").toString());
     remberPasswordCheckBox->setChecked(settings.value("password/rember",
                                                       false).toBool());
-    socksServerAddrEdit->setText(settings.value("socks_server/addr").toString());
+    socksServerAddrEdit->setText(settings.value("socks_server/addr",
+                                                "127.0.0.1").toString());
     socksServerPortEdit->setText(settings.value("socks_server/port",
                                                 "7070").toString());
 }
