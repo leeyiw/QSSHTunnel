@@ -35,13 +35,11 @@ public:
 
 public slots:
 	void connectBtnClicked();
+    void operationActionTriggered();
+
 	void sshReadyReadStdout();
     void sshReadyReadStderr();
 
-//    void aboutClicked();
-
-    void systemTrayActivated(QSystemTrayIcon::ActivationReason reason);
-    void operationActionTriggered();
     void updateTime();
 
 protected:
@@ -52,6 +50,7 @@ private:
     void prepareTrayIcon();
     void loadSettings();
 
+    bool validateForm();
     void connectSSH();
     void disconnectSSH();
 
@@ -64,10 +63,6 @@ private:
     QSettings settings;
     QElapsedTimer elapsedTimer;
     QTimer *timer;
-
-    /* Menus and Actions */
-//    QMenu *helpMenu;
-//    QAction *aboutAction;
 
     /* Tray icon, menu and actions */
     QSystemTrayIcon *trayIcon;

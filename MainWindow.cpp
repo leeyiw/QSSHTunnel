@@ -74,35 +74,7 @@ MainWindow::~MainWindow()
 void
 MainWindow::connectBtnClicked()
 {
-    /* Validate */
-    if (sshServerAddrEdit->text().length() == 0) {
-        QMessageBox::warning(this, tr("Warning"),
-                             tr("Invalid SSH server address"));
-        return;
-    }
-    if (sshServerPortEdit->text().length() == 0) {
-        QMessageBox::warning(this, tr("Warning"),
-                             tr("Invalid SSH server address"));
-        return;
-    }
-    if (usernameEdit->text().length() == 0) {
-        QMessageBox::warning(this, tr("Warning"),
-                             tr("Invalid SSH username"));
-        return;
-    }
-    if (passwordEdit->text().length() == 0) {
-        QMessageBox::warning(this, tr("Warning"),
-                             tr("Invalid SSH password"));
-        return;
-    }
-    if (socksServerAddrEdit->text().length() == 0) {
-        QMessageBox::warning(this, tr("Warning"),
-                             tr("Invalid SOCKS server address"));
-        return;
-    }
-    if (socksServerPortEdit->text().length() == 0) {
-        QMessageBox::warning(this, tr("Warning"),
-                             tr("Invalid SOCKS server address"));
+    if (!this->validateForm()) {
         return;
     }
 
@@ -110,6 +82,20 @@ MainWindow::connectBtnClicked()
     if (currentState == NotConnected) {
         connectSSH();
     } else {
+        disconnectSSH();
+    }
+}
+
+void
+MainWindow::operationActionTriggered()
+{
+    if (!this->validateForm()) {
+        return;
+    }
+
+    if (currentState == NotConnected) {
+        connectSSH();
+    } else if (currentState == Connected) {
         disconnectSSH();
     }
 }
@@ -153,38 +139,12 @@ MainWindow::sshReadyReadStderr()
     }
 }
 
-//void
-//MainWindow::aboutClicked()
-//{
-//    QString title = tr("About") + " " + qApp->applicationName();
-//    QString text = qApp->applicationName() + " is a open source software";
-//    QMessageBox::about(this, title, text);
-//}
-
-void
-MainWindow::systemTrayActivated(QSystemTrayIcon::ActivationReason reason)
-{
-    if (currentState == Connected) {
-
-    }
-}
-
-void
-MainWindow::operationActionTriggered()
-{
-    if (currentState == NotConnected) {
-        connectSSH();
-    } else if (currentState == Connected) {
-        disconnectSSH();
-    }
-}
-
 void
 MainWindow::updateTime()
 {
-    QTime connectedTime(0, 0, 0);
-    connectedTime = connectedTime.addMSecs(elapsedTimer.elapsed());
-    QString status = tr("Connect (%1)").arg(connectedTime.toString("hh:mm:ss"));
+    QTime t(0, 0, 0);
+    t = t.addMSecs(elapsedTimer.elapsed());
+    QString status = tr("Connected (%1)").arg(t.toString("hh:mm:ss"));
     statusLabel->setText(status);
     statusAction->setText(status);
 }
@@ -210,10 +170,6 @@ MainWindow::closeEvent(QCloseEvent *event)
 void
 MainWindow::prepareMenuBar()
 {
-    /* Set menu bar */
-//    helpMenu = new QMenu(tr("Help"));
-//    helpMenu->addAction(tr("About"), this, SLOT(aboutClicked()));
-//    this->menuBar()->addMenu(hnielpMenu);
 }
 
 void
@@ -257,6 +213,42 @@ MainWindow::loadSettings()
                                                 "127.0.0.1").toString());
     socksServerPortEdit->setText(settings.value("socks_server/port",
                                                 "7070").toString());
+}
+
+bool
+MainWindow::validateForm()
+{
+    if (sshServerAddrEdit->text().length() == 0) {
+        QMessageBox::warning(this, tr("Warning"),
+                             tr("Invalid SSH server address"));
+        return false;
+    }
+    if (sshServerPortEdit->text().length() == 0) {
+        QMessageBox::warning(this, tr("Warning"),
+                             tr("Invalid SSH server address"));
+        return false;
+    }
+    if (usernameEdit->text().length() == 0) {
+        QMessageBox::warning(this, tr("Warning"),
+                             tr("Invalid SSH username"));
+        return false;
+    }
+    if (passwordEdit->text().length() == 0) {
+        QMessageBox::warning(this, tr("Warning"),
+                             tr("Invalid SSH password"));
+        return false;
+    }
+    if (socksServerAddrEdit->text().length() == 0) {
+        QMessageBox::warning(this, tr("Warning"),
+                             tr("Invalid SOCKS server address"));
+        return false;
+    }
+    if (socksServerPortEdit->text().length() == 0) {
+        QMessageBox::warning(this, tr("Warning"),
+                             tr("Invalid SOCKS server address"));
+        return false;
+    }
+    return true;
 }
 
 void
@@ -327,16 +319,9 @@ MainWindow::setCurrentState(CurrentState state)
 {
     currentState = state;
 
-    if (currentState == Connected) {
-        elapsedTimer.restart();
-        timer = new QTimer(this);
-        connect(timer, SIGNAL(timeout()), this, SLOT(updateTime()));
-        timer->start(1000);
-    } else {
-        if (timer != NULL) {
-            delete timer;
-            timer = NULL;
-        }
+    if (currentState != Connected && timer != NULL) {
+        delete timer;
+        timer = NULL;
     }
 
     if (currentState == NotConnected) {
@@ -352,10 +337,15 @@ MainWindow::setCurrentState(CurrentState state)
         statusAction->setText(tr("Connecting..."));
         operationAction->setVisible(false);
     } else if (currentState == Connected) {
-        statusLabel->setText(tr("Connected"));
+        /* Start timer to update elapsed time in status label */
+        elapsedTimer.restart();
+        updateTime();
+        timer = new QTimer(this);
+        connect(timer, SIGNAL(timeout()), this, SLOT(updateTime()));
+        timer->start(1000);
+
         connectBtn->setText(tr("Disconnect"));
         connectBtn->setEnabled(true);
-        statusAction->setText(tr("Connected"));
         operationAction->setText(tr("Disconnect"));
         operationAction->setVisible(true);
     } else if (currentState == Disconnecting) {
