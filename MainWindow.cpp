@@ -322,6 +322,15 @@ MainWindow::setCurrentState(CurrentState state)
     }
 
     if (currentState == NotConnected) {
+        /* Enable user input area */
+        sshServerAddrEdit->setEnabled(true);
+        sshServerPortEdit->setEnabled(true);
+        usernameEdit->setEnabled(true);
+        passwordEdit->setEnabled(true);
+        remberPasswordCheckBox->setEnabled(true);
+        socksServerAddrEdit->setEnabled(true);
+        socksServerPortEdit->setEnabled(true);
+
         statusLabel->setText(tr("Not connected"));
         connectBtn->setText(tr("Connect"));
         connectBtn->setEnabled(true);
@@ -329,6 +338,15 @@ MainWindow::setCurrentState(CurrentState state)
         operationAction->setText(tr("Connect"));
         operationAction->setVisible(true);
     } else if (currentState == Connecting) {
+        /* Disable user input area */
+        sshServerAddrEdit->setDisabled(true);
+        sshServerPortEdit->setDisabled(true);
+        usernameEdit->setDisabled(true);
+        passwordEdit->setDisabled(true);
+        remberPasswordCheckBox->setDisabled(true);
+        socksServerAddrEdit->setDisabled(true);
+        socksServerPortEdit->setDisabled(true);
+
         statusLabel->setText(tr("Connecting..."));
         connectBtn->setEnabled(false);
         statusAction->setText(tr("Connecting..."));
