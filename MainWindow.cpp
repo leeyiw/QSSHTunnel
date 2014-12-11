@@ -56,7 +56,9 @@ MainWindow::MainWindow(QWidget *parent)
     setCentralWidget(widget);
 
     prepareMenuBar();
+#ifndef Q_OS_LINUX
     prepareTrayIcon();
+#endif
 
     loadSettings();
 
@@ -143,7 +145,9 @@ MainWindow::updateTime()
     t = t.addMSecs(elapsedTimer.elapsed());
     QString status = tr("Connected (%1)").arg(t.toString("hh:mm:ss"));
     statusLabel->setText(status);
+#ifndef Q_OS_LINUX
     statusAction->setText(status);
+#endif
 }
 
 void
@@ -169,6 +173,7 @@ MainWindow::prepareMenuBar()
 {
 }
 
+#ifndef Q_OS_LINUX
 void
 MainWindow::prepareTrayIcon()
 {
@@ -195,6 +200,7 @@ MainWindow::prepareTrayIcon()
     trayIcon->setContextMenu(trayMenu);
     trayIcon->show();
 }
+#endif
 
 void
 MainWindow::loadSettings()
@@ -334,9 +340,11 @@ MainWindow::setCurrentState(CurrentState state)
         statusLabel->setText(tr("Not connected"));
         connectBtn->setText(tr("Connect"));
         connectBtn->setEnabled(true);
+#ifndef Q_OS_LINUX
         statusAction->setText(tr("Not connected"));
         operationAction->setText(tr("Connect"));
         operationAction->setVisible(true);
+#endif
     } else if (currentState == Connecting) {
         /* Disable user input area */
         sshServerAddrEdit->setDisabled(true);
@@ -349,8 +357,10 @@ MainWindow::setCurrentState(CurrentState state)
 
         statusLabel->setText(tr("Connecting..."));
         connectBtn->setEnabled(false);
+#ifndef Q_OS_LINUX
         statusAction->setText(tr("Connecting..."));
         operationAction->setVisible(false);
+#endif
     } else if (currentState == Connected) {
         /* Start timer to update elapsed time in status label */
         elapsedTimer.restart();
@@ -361,12 +371,16 @@ MainWindow::setCurrentState(CurrentState state)
 
         connectBtn->setText(tr("Disconnect"));
         connectBtn->setEnabled(true);
+#ifndef Q_OS_LINUX
         operationAction->setText(tr("Disconnect"));
         operationAction->setVisible(true);
+#endif
     } else if (currentState == Disconnecting) {
         statusLabel->setText(tr("Disconnecting..."));
         connectBtn->setEnabled(false);
+#ifndef Q_OS_LINUX
         statusAction->setText(tr("Disconnecting..."));
         operationAction->setVisible(false);
+#endif
     }
 }

@@ -23,6 +23,7 @@
 #include <QStringList>
 #include <QSystemTrayIcon>
 #include <QTemporaryFile>
+#include <QtGlobal>
 #include <QTime>
 #include <QTimer>
 #include <QWidget>
@@ -49,7 +50,9 @@ protected:
 
 private:
     void prepareMenuBar();
+#ifndef Q_OS_LINUX
     void prepareTrayIcon();
+#endif
     void loadSettings();
 
     bool validateForm();
@@ -66,11 +69,13 @@ private:
     QElapsedTimer elapsedTimer;
     QTimer *timer;
 
+#ifndef Q_OS_LINUX
     /* Tray icon, menu and actions */
     QSystemTrayIcon *trayIcon;
     QMenu *trayMenu;
     QAction *statusAction;
     QAction *operationAction;
+#endif
 
     /* Base layout */
 	QFormLayout *layout;
