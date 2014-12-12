@@ -267,17 +267,16 @@ MainWindow::connectSSH()
             this, SLOT(sshReadyReadStderr()));
 
     /* Generate SSH_ASKPASS file with right permission and content */
-    sshAskPassFile = new QTemporaryFile();
+    sshAskPassFile = new MyTemporaryFile();
     if (!sshAskPassFile->open()) {
         setCurrentState(NotConnected);
         statusLabel->setText(tr("Connect failed (SSH_ASKPASS error)"));
         return;
     }
     QFile::Permissions perm = sshAskPassFile->permissions();
-    qDebug() << sshAskPassFile->fileName();
     perm |= QFile::ExeOwner | QFile::ExeUser;
     sshAskPassFile->setPermissions(perm);
-    QTextStream out(sshAskPassFile);
+    QTextStream out(sshAskPassFile->getFile());
     out << "#!/usr/bin/env bash\n";
     out << "echo '" << passwordEdit->text() << "'\n";
     sshAskPassFile->close();

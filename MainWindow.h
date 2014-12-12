@@ -22,11 +22,12 @@
 #include <QSettings>
 #include <QStringList>
 #include <QSystemTrayIcon>
-#include <QTemporaryFile>
 #include <QtGlobal>
 #include <QTime>
 #include <QTimer>
 #include <QWidget>
+
+#include "MyTemporaryFile.h"
 
 class MainWindow : public QMainWindow
 {
@@ -64,7 +65,7 @@ private:
     void setCurrentState(CurrentState state);
 
     QProcess *sshProcess;
-    QTemporaryFile *sshAskPassFile;
+    MyTemporaryFile *sshAskPassFile;
     QSettings settings;
     QElapsedTimer elapsedTimer;
     QTimer *timer;
