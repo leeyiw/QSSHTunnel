@@ -59,6 +59,7 @@ private:
     bool validateForm();
     void connectSSH();
     void disconnectSSH();
+    void updateIcon();
 
     enum CurrentState { NotConnected, Connecting, Connected, Disconnecting };
     CurrentState currentState;

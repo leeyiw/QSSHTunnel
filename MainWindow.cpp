@@ -382,4 +382,20 @@ MainWindow::setCurrentState(CurrentState state)
         operationAction->setVisible(false);
 #endif
     }
+
+    updateIcon();
+}
+
+void
+MainWindow::updateIcon()
+{
+    if (currentState == Connected) {
+#ifndef Q_OS_LINUX
+        trayIcon->setIcon(QIcon(":/images/images/icon_locked_16x16@2x.png"));
+#endif
+    } else {
+#ifndef Q_OS_LINUX
+        trayIcon->setIcon(QIcon(":/images/images/icon_16x16@2x.png"));
+#endif
+    }
 }
