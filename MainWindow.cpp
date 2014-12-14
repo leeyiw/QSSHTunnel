@@ -77,7 +77,6 @@ MainWindow::connectBtnClicked()
         return;
     }
 
-    connectBtn->setDisabled(true);
     if (currentState == NotConnected) {
         connectSSH();
     } else {
@@ -94,7 +93,7 @@ MainWindow::operationActionTriggered()
 
     if (currentState == NotConnected) {
         connectSSH();
-    } else if (currentState == Connected) {
+    } else {
         disconnectSSH();
     }
 }
@@ -312,6 +311,10 @@ MainWindow::disconnectSSH()
     sshProcess->kill();
     delete sshProcess;
     sshProcess = NULL;
+    if (sshAskPassFile != NULL) {
+        delete sshAskPassFile;
+        sshAskPassFile = NULL;
+    }
 
     setCurrentState(NotConnected);
 }
@@ -355,7 +358,8 @@ MainWindow::setCurrentState(CurrentState state)
         socksServerPortEdit->setDisabled(true);
 
         statusLabel->setText(tr("Connecting..."));
-        connectBtn->setEnabled(false);
+        connectBtn->setText(tr("Cancel"));
+        connectBtn->setEnabled(true);
 #ifndef Q_OS_LINUX
         statusAction->setText(tr("Connecting..."));
         operationAction->setVisible(false);
