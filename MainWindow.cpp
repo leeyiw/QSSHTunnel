@@ -293,6 +293,7 @@ MainWindow::connectSSH()
                                               socksServerPortEdit->text());
     arguments << "-p" << sshServerPortEdit->text();
     arguments << "-o" << "ConnectTimeout=10";
+    arguments << "-o" << "StrictHostKeyChecking=no";
     arguments << QString("%1@%2").arg(usernameEdit->text(),
                                       sshServerAddrEdit->text());
     sshProcess->start("ssh", arguments);
