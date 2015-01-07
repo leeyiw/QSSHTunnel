@@ -294,6 +294,7 @@ MainWindow::connectSSH()
     arguments << "-p" << sshServerPortEdit->text();
     arguments << "-o" << "ConnectTimeout=10";
     arguments << "-o" << "StrictHostKeyChecking=no";
+    arguments << "-o" << "UserKnownHostsFile=/dev/null";
     arguments << QString("%1@%2").arg(usernameEdit->text(),
                                       sshServerAddrEdit->text());
     sshProcess->start("ssh", arguments);
